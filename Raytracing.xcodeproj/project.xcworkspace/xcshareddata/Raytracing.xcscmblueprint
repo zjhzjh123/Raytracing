@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "0477A20EB9BCD49D508918D529DBC0AE4BFC3FF9",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "0477A20EB9BCD49D508918D529DBC0AE4BFC3FF9" : 0,
+    "4E22BF2F8F36BACBAA34641982FD50D612B9161C" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "CC7B7F41-7F72-43C9-A717-D20FA758CB18",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "0477A20EB9BCD49D508918D529DBC0AE4BFC3FF9" : "Raytracing\/",
+    "4E22BF2F8F36BACBAA34641982FD50D612B9161C" : "Raytracing\/Raytracing\/concurrentqueue\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "Raytracing",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Raytracing.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:zjhzjh123\/Raytracing.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "0477A20EB9BCD49D508918D529DBC0AE4BFC3FF9"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:cameron314\/concurrentqueue.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "4E22BF2F8F36BACBAA34641982FD50D612B9161C"
+    }
+  ]
+}

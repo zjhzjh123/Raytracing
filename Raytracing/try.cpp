@@ -35,12 +35,24 @@ const int Maxdepth = 2;
 
 const float pi = 3.141592653;
 
-const int samples = 50;
+const int samples = 5;
 
 //std::atomic<int> cnt_pixels;
 
+inline float eta(int progress, int total,
+                 const std::chrono::high_resolution_clock::time_point &start,
+                 const std::chrono::high_resolution_clock::time_point &now)
+{
+    assert(progress != 0);
+    return (float) ((1. * (total - progress) / progress) * ((now - start).count() / 1e9));
+}
+
 
 template<typename T>
+
+
+
+
 
 class Vec3
 {
@@ -126,7 +138,7 @@ public:
     vector<Vec3f> vertex;
     Vec3f normal;
     
-    Plane(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &color, const Vec3f &delta){
+    Plane(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &color, const Vec3f &delta, const float &k_reflect = 0, const float &k_refract = 0, const float &k_refract_index = 0){
         vertex.push_back(a + delta);
         vertex.push_back(b + delta);
         vertex.push_back(c + delta);
@@ -141,12 +153,12 @@ public:
         vertex.push_back(vertex[0]);
         //cout << "vertex.size() = " << vertex.size() << endl;
         material.color = color;
-        material.k_diffuse_reflect = 1;
+        material.k_diffuse_reflect = 0.6;
         //material.k_diffuse = 0.1;
-        material.k_reflect = 1;
+        material.k_reflect = k_reflect;
         material.k_specular = 0;
-        material.k_refract = 1;
-        material.k_refract_index = 1.2;
+        material.k_refract = k_refract;
+        material.k_refract_index = k_refract_index;
         material.k_ambient = 1;
         
     }
@@ -185,10 +197,11 @@ class Raytracing
 {
 public:
     std::vector<Plane> planes;
-    Light light;
+    vector<Light> light;
+    vector<Light> lightpoint;
     Vec3f eye;
-    Vec3f lightlb, lightrt;
-    int lwidth, lheight;
+    //Vec3f lightlb, lightrt;
+    //int lwidth, lheight;
     Color Ia;
     int width, height;
     //Color a[100000];
@@ -204,9 +217,9 @@ public:
         return distr(generatorr);
     }
     
-    Raytracing(const vector<Plane>& faces, const Light& orilight, const Color &color, const Vec3f &eyes, const Vec3f &lb0, const Vec3f &rt0, const int &width0, const int &height0, const Vec3f &lightlb0, const Vec3f &lightrt0, const int &lwight0, const int &lheight0):planes(faces), light(orilight), Ia(color), eye(eyes), lb(lb0), rt(rt0), width(width0), height(height0), lightlb(lightlb0), lightrt(lightrt0), lwidth(lwight0), lheight(lheight0){distr = uniform_real_distribution<double>(0, 1);};
+    //Raytracing(const vector<Plane>& faces, const Light& orilight, const Color &color, const Vec3f &eyes, const Vec3f &lb0, const Vec3f &rt0, const int &width0, const int &height0, const Vec3f &lightlb0, const Vec3f &lightrt0, const int &lwight0, const int &lheight0):planes(faces), light(orilight), Ia(color), eye(eyes), lb(lb0), rt(rt0), width(width0), height(height0), lightlb(lightlb0), lightrt(lightrt0), lwidth(lwight0), lheight(lheight0){distr = uniform_real_distribution<double>(0, 1);};
     
-     Raytracing(const vector<Plane>& faces, const Light& orilight, const Color &color, const Vec3f &eyes, const Vec3f &lb0, const Vec3f &rt0, const int &width0, const int &height0):planes(faces), light(orilight), Ia(color), eye(eyes), lb(lb0), rt(rt0), width(width0), height(height0){distr = uniform_real_distribution<double>(0, 1);};
+     Raytracing(const vector<Plane>& faces, const vector<Light> &light0, const Color &color, const Vec3f &eyes, const Vec3f &lb0, const Vec3f &rt0, const int &width0, const int &height0, const float &k_reflect = 0):planes(faces), lightpoint(light0), light(light0), Ia(color), eye(eyes), lb(lb0), rt(rt0), width(width0), height(height0){distr = uniform_real_distribution<double>(0, 1);};
 
     
     Vec3f crossRayPlane(const Ray& ray,const Plane& plane)
@@ -271,23 +284,26 @@ public:
         return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
     }
 
-    /*Color local(int k, const Vec3f& current_pos,const Ray& ray)
+    Color local(int k, const Vec3f& current_pos,const Ray& ray)
     {
         const Plane& p = planes[k];
         Color color = p.material.k_ambient * Ia;
         Vec3f normal = p.normal;
-        if (find(Ray(light.pos, current_pos - light.pos)) == k)
-        {
-            Vec3f tmpkd(0), tmpks(0);
-            tmpkd = light.color * p.material.color * p.material.k_diffuse_reflect * (light.pos - current_pos).normalize().dot(normal);
-            if (tmpkd.x > 1e-3 || tmpkd.y > 1e-3 || tmpkd.z > 1e-3) color += tmpkd;
+        for(int i = 0; i < light.size(); i++){
+            Light light0 = light[i];
+            if (find(Ray(light0.pos, current_pos - light0.pos)) == k)
+            {
+                //cout << "i = " << i << "light0 = " << light0.pos << endl;
+                Vec3f tmpkd(0), tmpks(0);
+                tmpkd = light0.color * p.material.color * p.material.k_diffuse_reflect * (light0.pos - current_pos).normalize().dot(normal);
+                if (tmpkd.x > 1e-3 || tmpkd.y > 1e-3 || tmpkd.z > 1e-3) color += tmpkd;
             
-            if (tmpkd.x < -1e-3 || tmpkd.y < -1e-3 || tmpkd.z < -1e-3) color = color - tmpkd;
-            
-            
+                if (tmpkd.x < -1e-3 || tmpkd.y < -1e-3 || tmpkd.z < -1e-3) color = color - tmpkd;
+            }
         }
+        color = color / light.size();
         return color;
-    }*/
+    };
     
    
     Color tracing(const Ray &ray, int depth){
@@ -296,19 +312,20 @@ public:
         
         int nearest = find(ray);
         
-        if(nearest == -1 && ray.direction.z < -1e-3){
-            //cout << "come in " << light.color * (Vec3f(0, 0, -1).dot(ray.direction)) << endl;
-            return light.color * (Vec3f(0, 0, -1).dot(ray.direction));
-        }
-        
+        //if(nearest == -1 && ray.direction.dot(Vec3f(0, 0, -1).normalize()) > 1e-3){
+            //return light.color *  ray.direction.dot(Vec3f(0, 0, -1).normalize());
+        //}
         if(nearest != -1){
-            //cout << "nearest = " << nearest << endl;
+            
             Plane &p = planes[nearest];
             
             Vec3f cross = crossRayPlane(ray, p);
-            //cout << p.normal.dot(ray.direction) << endl;
             
-            if(depth == 0 && p.material.k_diffuse_reflect > 0){
+            Ray ReflectRay(cross, reflect(ray.direction, p.normal).normalize());
+            
+            color += local(nearest, cross, ReflectRay);
+        
+            /*if(depth == 0 && p.material.k_diffuse_reflect > 0){
                 Color diffcolor;
                 for(int i = 0; i < samples; i++){
                     double r1 = 2 * pi * erand(), r2 = erand(), r2s = sqrt(r2);
@@ -335,17 +352,17 @@ public:
                 }
                 color += (diffcolor / Vec3f(samples, samples, samples));
                 
-            }
-            
+            }*/
+        
             if(depth < Maxdepth){
                 //Ray ReflectRay(cross, reflect(ray.direction, p.normal).normalize());
                 //color += p.material.k_reflect * tracing(ReflectRay, depth + 1);
-                //if(p.material.k_refract > 0){
-                    //Ray RefractRay(cross, refract(ray.direction, p.normal, p.material.k_refract_index));
-                    //color += p.material.k_refract * tracing(RefractRay, depth + 1);
-                //}
+                if(p.material.k_refract > 0){
+                    Ray RefractRay(cross, refract(ray.direction, p.normal, p.material.k_refract_index));
+                    color += p.material.k_refract * tracing(RefractRay, depth + 1);
+                }
             }
-            color = color * p.material.color;
+            //color = color * p.material.color;
             
             //if(color.y < 10) cout << "sss " << endl;
         }
@@ -355,7 +372,53 @@ public:
         return color;
     };
     
+    void samples_lights(const int radius, const double ratio){
+        
+        int light_sz = lightpoint.size();
+        
+        for(int i = 0; i < light_sz; i++){
+            Vec3f light_center = lightpoint[i].pos;
+            Color light_color = lightpoint[i].color;
+            float x = light_center.x;
+            float y = light_center.y;
+            float z = light_center.z;
+            
+            for(int dx = 0; dx < radius; dx++){
+                for(int dy = 0; dy < radius; dy++){
+                    for(int dz = 0; dz < radius; dz++){
+                        float xx = x + 1.0 * dx / 10.0;
+                        float yy = y + 1.0 * dy / 10.0;
+                        float zz = z + 1.0 * dz / 10.0;
+                        Vec3f light_dir(xx, yy, zz);
+                        
+                        Light light_new(light_dir, light_color);
+                        light.push_back(light_new);
+                    }
+                }
+            }
+        }
+        
+        int sz = light.size();
+        
+        vector<Light> tmplight;
+        
+        for(int i = 0; i < light.size(); i++){
+            double ran = (double(rand())) / (RAND_MAX);
+            if(ran < ratio){
+                tmplight.push_back(light[i]);
+            }
+        }
+        
+        light.clear();
+        for(int i = 0; i < tmplight.size(); i++){
+            light.push_back(tmplight[i]);
+        }
+    }
+    
+    
     void show(){
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        std::atomic<int> cnt_pixels;
         moodycamel::ConcurrentQueue<std::pair<int, int> > q;
         int t = 0;
         auto func = [&] {
@@ -364,7 +427,7 @@ public:
                 q.try_dequeue(item);
                 int i = item.first,
                     j = item.second;
-                fprintf(stderr, "%d %d\n", i, j);
+                //fprintf(stderr, "%d %d\n", i, j);
                 if (i == -1) return;
                 Vec3f s = Vec3f(i, j, 0) * (rt - lb) / screenSize + lb;
                 s.z = lb.z;
@@ -374,11 +437,12 @@ public:
                 
                 buffer[i * width + j] = tracing(ray, 0);
                 //fprintf(stderr, "%f %f %f", buffer.back());
-                //++cnt_pixels;
+                ++cnt_pixels;
+                if (cnt_pixels.load() % 1024 == 0) fprintf(stderr, "Rendering the %d/%d pixel, ETA: %.2fs.\r", cnt_pixels.load(), width * height, eta(cnt_pixels.load(), height * width, start, std::chrono::high_resolution_clock::now()));
             }
         };
         
-        //cnt_pixels = 0;
+        cnt_pixels = 0;
         std::vector<std::pair<int, int> > xys;
         
         for (int i = 0; i < height; i++)
@@ -398,7 +462,15 @@ public:
         for (int i = 0; i < num_workers; ++i)
             q.enqueue(std::make_pair(-1, -1));
         
-        
+        /*while (true){
+            int cnt = cnt_pixels.load();
+            auto now = std::chrono::high_resolution_clock::now();
+            auto sec = (now - start).count() / 1e9;
+            fprintf(stderr, "\rrendered %d/%d pixels using %d workers in %.3fs...", cnt, total, config.num_worker, sec);
+            if (cnt == total) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+        */
         
         for (auto &worker: workers) {
             worker.join();
